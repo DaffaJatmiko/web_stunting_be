@@ -3,6 +3,9 @@ from ..models.health_record import HealthRecord
 from ..orms.health_record import HealthRecordORM
 from pyramid.httpexceptions import HTTPBadRequest
 from datetime import datetime
+import logging
+log = logging.getLogger(__name__)
+
 
 @view_config(route_name='health_record_list', renderer='json', request_method='GET')
 def health_record_list(request):
@@ -20,8 +23,13 @@ def health_record_detail(request):
     record = HealthRecord.from_orm(record_orm)
     return record.to_dict()
 
+
 @view_config(route_name='health_record_add', renderer='json', request_method='POST')
 def health_record_add(request):
+    log.debug("Entering health_record_add view")
+    log.debug(f"Request method: {request.method}")
+    log.debug(f"Route name: {request.matched_route.name}")
+    log.debug(f"Renderer: {getattr(request.matched_route, 'renderer', 'Not set')}")
     try:
         children_id = int(request.matchdict['children_id'])
         data = request.json_body
@@ -35,9 +43,14 @@ def health_record_add(request):
         request.dbsession.flush()
         return {'message': 'Health record added successfully', 'record_id': new_record.record_id}
     except KeyError as e:
+        log.error(f"KeyError in health_record_add: {str(e)}")
         return HTTPBadRequest(detail=f'Missing required field: {str(e)}')
     except ValueError as e:
+        log.error(f"ValueError in health_record_add: {str(e)}")
         return HTTPBadRequest(detail=f'Invalid value: {str(e)}')
+    except Exception as e:
+        log.error(f"Unexpected error in health_record_add: {str(e)}")
+        return HTTPBadRequest(detail=f'An unexpected error occurred: {str(e)}')
 
 @view_config(route_name='health_record_update', renderer='json', request_method='PUT')
 def health_record_update(request):
