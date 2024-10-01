@@ -7,9 +7,9 @@ def includeme(config):
     config.add_route('child_detail', '/children/{id}')
     
     # Health Record routes
-    config.add_route('health_record', '/children/{children_id}/health-records')
-    config.add_route('health_record_detail', '/children/{children_id}/health-records/{record_id}')
+    config.add_route('health_record', '/health-records/children/{children_id}')
+    config.add_route('health_record_detail', '/health-records/{record_id}/children/{children_id}')
     
     # Measurement routes
-    config.add_route('measurement', '/children/{children_id}/measurements')
-    config.add_route('measurement_detail', '/children/{children_id}/measurements/{measurement_id}')
+    config.add_route('measurement', '/measurements/children/{children_id}')
+    config.add_route('measurement_detail', '/measurements/{measurement_id}/children/{children_id}')
