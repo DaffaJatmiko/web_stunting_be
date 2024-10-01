@@ -1,11 +1,17 @@
 from ..orms.child import ChildORM
+from ..orms.anthropometric_measurement import MeasurementORM
+from ..orms.health_record import HealthRecordORM
 from sqlalchemy.orm import Session
 from datetime import datetime
+from sqlalchemy.orm import joinedload
+from .anthropometric_measurement import Measurement
+from .health_record import HealthRecord
 
 class Child:
     def __init__(self, children_id, children_name, children_birth_date, children_address, 
                  children_parent, children_parent_phone, children_allergy, 
-                 children_blood_type, children_weight, children_height):
+                 children_blood_type, children_weight, children_height,
+                 measurements=None, health_records=None):
         self.children_id = children_id
         self.children_name = children_name
         self.children_birth_date = children_birth_date
@@ -16,6 +22,8 @@ class Child:
         self.children_blood_type = children_blood_type
         self.children_weight = children_weight
         self.children_height = children_height
+        self.measurements = measurements or []
+        self.health_records = health_records or []
 
     @classmethod
     def from_orm(cls, orm_obj):
@@ -29,7 +37,9 @@ class Child:
             children_allergy=orm_obj.children_allergy,
             children_blood_type=orm_obj.children_blood_type,
             children_weight=orm_obj.children_weight,
-            children_height=orm_obj.children_height
+            children_height=orm_obj.children_height,
+            measurements=[Measurement.from_orm(m) for m in orm_obj.measurements],
+            health_records=[HealthRecord.from_orm(hr) for hr in orm_obj.health_records]
         )
 
     def to_dict(self):
@@ -43,17 +53,25 @@ class Child:
             'children_allergy': self.children_allergy,
             'children_blood_type': self.children_blood_type,
             'children_weight': self.children_weight,
-            'children_height': self.children_height
+            'children_height': self.children_height,
+            'measurements': [m.to_dict() for m in self.measurements],
+            'health_records': [hr.to_dict() for hr in self.health_records]
         }
 
     @classmethod
     def get_all(cls, dbsession: Session):
-        children_orm = dbsession.query(ChildORM).all()
+        children_orm = dbsession.query(ChildORM).options(
+            joinedload(ChildORM.measurements),
+            joinedload(ChildORM.health_records)
+        ).all()
         return [cls.from_orm(child) for child in children_orm]
 
     @classmethod
     def get_by_id(cls, dbsession: Session, children_id: int):
-        child_orm = dbsession.query(ChildORM).filter(ChildORM.children_id == children_id).first()
+        child_orm = dbsession.query(ChildORM).options(
+            joinedload(ChildORM.measurements),
+            joinedload(ChildORM.health_records)
+        ).filter(ChildORM.children_id == children_id).first()
         return cls.from_orm(child_orm) if child_orm else None
 
     @classmethod
@@ -89,6 +107,11 @@ class Child:
     def delete(cls, dbsession: Session, children_id: int):
         child_orm = dbsession.query(ChildORM).filter(ChildORM.children_id == children_id).first()
         if child_orm:
+            # Delete related measurements
+            dbsession.query(MeasurementORM).filter(MeasurementORM.children_id == children_id).delete()
+            # Delete related health records
+            dbsession.query(HealthRecordORM).filter(HealthRecordORM.children_id == children_id).delete()
+            # Delete the child
             dbsession.delete(child_orm)
             return True
         return False

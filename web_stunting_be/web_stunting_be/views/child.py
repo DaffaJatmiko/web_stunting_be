@@ -1,6 +1,7 @@
 from pyramid.view import view_config, view_defaults
 from ..models.child import Child
 from pyramid.httpexceptions import HTTPBadRequest, HTTPNotFound
+from sqlalchemy.exc import IntegrityError
 
 @view_defaults(route_name='child')
 class ChildViews:
@@ -25,6 +26,8 @@ class ChildViews:
             return HTTPBadRequest(detail=f'Missing required field: {str(e)}')
         except ValueError as e:
             return HTTPBadRequest(detail=f'Invalid value: {str(e)}')
+        except IntegrityError:
+            return HTTPBadRequest(detail='A child with this information already exists')
 
 @view_defaults(route_name='child_detail')
 class ChildDetailViews:
@@ -52,10 +55,12 @@ class ChildDetailViews:
             return HTTPBadRequest(detail=f'Missing required field: {str(e)}')
         except ValueError as e:
             return HTTPBadRequest(detail=f'Invalid value: {str(e)}')
+        except IntegrityError:
+            return HTTPBadRequest(detail='Update would violate unique constraints')
 
     @view_config(request_method='DELETE', renderer='json')
     def delete(self):
         children_id = int(self.request.matchdict['id'])
         if Child.delete(self.request.dbsession, children_id):
-            return {'message': 'Child deleted successfully', 'children_id': children_id}
+            return {'message': 'Child and related data deleted successfully', 'children_id': children_id}
         return HTTPNotFound(detail='Child not found')
