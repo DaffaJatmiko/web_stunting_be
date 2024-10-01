@@ -13,8 +13,12 @@ class MeasurementViews:
     def list(self):
         children_id = int(self.request.matchdict['children_id'])
         measurements_orm = self.request.dbsession.query(MeasurementORM).filter(MeasurementORM.children_id == children_id).all()
-        measurements = [Measurement.from_orm(measurement) for measurement in measurements_orm]
-        return {'measurements': [measurement.to_dict() for measurement in measurements]}
+        measurements = [Measurement.from_orm(measurement).to_dict() for measurement in measurements_orm]
+        
+        return {
+            'data': measurements,
+            'total': len(measurements)
+        }
 
     @view_config(request_method='POST', renderer='json')
     def add(self):

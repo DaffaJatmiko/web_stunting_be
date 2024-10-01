@@ -16,8 +16,12 @@ class HealthRecordViews:
     def list(self):
         children_id = int(self.request.matchdict['children_id'])
         health_records_orm = self.request.dbsession.query(HealthRecordORM).filter(HealthRecordORM.children_id == children_id).all()
-        health_records = [HealthRecord.from_orm(record) for record in health_records_orm]
-        return {'health_records': [record.to_dict() for record in health_records]}
+        health_records = [HealthRecord.from_orm(record).to_dict() for record in health_records_orm]
+        
+        return {
+            'data': health_records,
+            'total': len(health_records)
+        }
 
     @view_config(request_method='POST', renderer='json')
     def add(self):

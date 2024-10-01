@@ -12,8 +12,11 @@ class ChildViews:
     @view_config(request_method='GET', renderer='json')
     def list(self):
         children_orm = self.request.dbsession.query(ChildORM).all()
-        children = [Child.from_orm(child) for child in children_orm]
-        return {'children': [child.to_dict() for child in children]}
+        children = [Child.from_orm(child).to_dict() for child in children_orm]
+        return {
+            'data': children,
+            'total': len(children)
+        }
 
     @view_config(request_method='POST', renderer='json')
     def add(self):
